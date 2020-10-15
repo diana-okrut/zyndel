@@ -1,51 +1,46 @@
 import json
 import requests
-from lxml import etree
-from lxml import html
+from lxml import etree, html
 
 
-def read_file():
+def get_file():
     response = requests.get('https://www.mebelshara.ru/contacts')
     text = response.text
-    # TODO: WTF?
-    with open('test.html', 'wb') as output_file:
-        output_file.write(text.encode('utf-8'))
-    with open('test.html', 'rb') as input_file:
-        text = input_file.read().decode('utf-8')
     return text
 
 
-def parse_user_datafile_lxml():
-    results = []
-    text = read_file()
-
+def parse_shops():
+    mebelshara_shops = []
+    text = get_file()
     tree = html.fromstring(text)
 
-    adress_list_lxml = tree.xpath('//div[@class = "city-list js-city-list"]')[0]
+    adress_list_lxml = tree.xpath('//div[@class = "city-item"]')
+
     for item_lxml in adress_list_lxml:
-        for element in item_lxml.xpath('.//div[@class = "shop-list-item"]'):
-            name = element.get("data-shop-name")
-            print(name)
-
-        # TODO: use H4 tag only
         city = item_lxml.xpath('.//h4[@class = "js-city-name"]/text()')[0]
-        shop_address = item_lxml.xpath('.//div[@class = "shop-address"]/text()')[0]
-        shop_name = item_lxml.xpath('.//div[@class = "shop-name"]/text()')[0]
-        phones = item_lxml.xpath('.//div[@class = "shop-phone"]/text()')[0]
-        working_hours = item_lxml.xpath('.//div[@class = "shop-weekends"]/text()')[0]
-        weekends = item_lxml.xpath('.//div[@class = "shop-work-time"]/text()')[0]
-        wh = ','.join([working_hours, weekends]) if weekends != 'Без выходных:' else ','.join([working_hours])
-        results.append({
-            "address": ','.join([city, shop_address]),
-            "latlon": None,
-            "name": shop_name,
-            "phones": phones,
-            "working_hours": wh,
-        })
+        for element in item_lxml.xpath('.//div[@class = "shop-list-item"]'):
+            address = element.get("data-shop-address")
 
-    with open('test_file.json', 'w') as file:
-        json.dump(results, file, indent=4)
+            phone = element.get("data-shop-phone")
+
+            weekend = element.get("data-shop-mode1")
+            working = element.get("data-shop-mode2")
+            working_hours = [f'пн - вс {working}'] if "Без" in weekend else [weekend, working]
+
+            latitude = float(element.get("data-shop-latitude"))
+            longitude = float(element.get("data-shop-longitude"))
+
+            mebelshara_shops.append({
+                "address": f' {city}, {address}',
+                "latlon": [latitude, longitude],
+                "name": "Мебель Шара",
+                "phones": None if not phone else [''.join(el for el in phone if el not in['(', ')'])],
+                "working_hours": working_hours
+            })
+
+    with open('mebelshara_shops.json', 'w') as file:
+        json.dump(mebelshara_shops, file, indent=4)
 
 
 if __name__ == "__main__":
-    parse_user_datafile_lxml()
+    parse_shops()
