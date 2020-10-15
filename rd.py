@@ -1,22 +1,16 @@
 import json
+
 import requests
-from lxml import etree, html
+from lxml import html
 
 
-def get_file():
+def main():
     response = requests.get('https://www.mebelshara.ru/contacts')
-    text = response.text
-    return text
-
-
-def parse_shops():
     mebelshara_shops = []
-    text = get_file()
-    tree = html.fromstring(text)
+    tree = html.fromstring(response.text)
+    address_list_lxml = tree.xpath('//div[@class = "city-item"]')
 
-    adress_list_lxml = tree.xpath('//div[@class = "city-item"]')
-
-    for item_lxml in adress_list_lxml:
+    for item_lxml in address_list_lxml:
         city = item_lxml.xpath('.//h4[@class = "js-city-name"]/text()')[0]
         for element in item_lxml.xpath('.//div[@class = "shop-list-item"]'):
             address = element.get("data-shop-address")
@@ -31,10 +25,10 @@ def parse_shops():
             longitude = float(element.get("data-shop-longitude"))
 
             mebelshara_shops.append({
-                "address": f' {city}, {address}',
+                "address": f'{city}, {address}',
                 "latlon": [latitude, longitude],
-                "name": "Мебель Шара",
-                "phones": None if not phone else [''.join(el for el in phone if el not in['(', ')'])],
+                "name": "Мебель Шара",  # в ТЗ в поле name указано название магазина, а не название ТЦ
+                "phones": None if not phone else phone.replace('(', '').replace(')', ''),
                 "working_hours": working_hours
             })
 
@@ -42,5 +36,5 @@ def parse_shops():
         json.dump(mebelshara_shops, file, indent=4, ensure_ascii=False)
 
 
-if __name__ == "__main__":
-    parse_shops()
+if __name__ == '__main__':
+    main()

@@ -1,5 +1,7 @@
 import json
+
 import requests
+
 
 def working_hours(elem):
     '''
@@ -20,61 +22,47 @@ def working_hours(elem):
             }
         }
     '''
-    # for i in working_hours.items():
-    #     if i == 'workdays':
-    #         k = working_hours.get("workdays")
-    #         for m in k:
-    #             working_hours_list["startStr_wd"] = m['startStr']
-    #             working_hours_list["endStr_wd"] = m['endStr']
-    #     elif i == 'saturday':
-    #         l = working_hours.get("saturday")
-    #         if len(l) > 1:
-    #             for n in l:
-    #                 working_hours_list["startStr_sun"] = l['startStr']
-    #                 working_hours_list["endStr_sun"] = l['endStr']
-    #         else:
-    #             working_hours_list["startStr_sun"] = 'сб'
-    #             working_hours_list["endStr_sun"] = 'выходной'
-    #     elif i == 'sunday':
-    #         k = working_hours.get("saturday")
-    #         if len(k) > 1:
-    #             for m in k:
-    #                 working_hours_list["startStr_sat"] = m['startStr']
-    #                 working_hours_list["endStr_sat"] = m['endStr']
-    #         else:
-    #             working_hours_list["startStr_sat"] = 'вс'
-    #             working_hours_list["endStr_sat"] = 'выходной'
-    pass
+    workdays, saturday, sunday = elem['workdays'], elem['saturday'], elem['sunday']
+    time_in_workdays = f"пн-пт {workdays['startStr']} до {workdays['endStr']}"
+    time_in_sunday = None
+    if sunday == saturday and len(sunday) > 1:
+        time_in_weekend = f"сб-вс {saturday['startStr']} до {saturday['endStr']}"
+    elif sunday == saturday and len(sunday) == 1:
+        time_in_weekend = 'сб-вс выходной'
+    elif sunday != saturday and len(sunday) == 1:
+        time_in_weekend = f"сб {saturday['startStr']} до {saturday['endStr']}"
+    else:
+        time_in_weekend = f"сб {saturday['startStr']} до {saturday['endStr']}"
+        time_in_sunday = f"вс {sunday['startStr']} до {sunday['endStr']}"
+    result = [time_in_workdays, time_in_weekend] if not time_in_sunday \
+        else [time_in_workdays, time_in_weekend, time_in_sunday]
+    return result
 
-def get_file():
-    response = requests.get('https://apigate.tui.ru/api/office/list?cityId=1&subwayId=&hoursFrom=&hoursTo=&serviceIds=all&toBeOpenOnHolidays=false')
-    data = response.json()
-    offices = json.loads(response.text)
-    a = offices.get('offices')
+
+def main():
+    response = requests.get(
+        'https://apigate.tui.ru/api/office/list?cityId=1&subwayId=&hoursFrom=&hoursTo=&serviceIds=all&toBeOpenOnHolidays=false')
+    info_about_offices = json.loads(response.text)
+    offices_list = info_about_offices.get('offices')
     result = []
-    for elem in a:
-        address = elem["address"]
-        latlon = [elem["latitude"], elem["longitude"]]
-        name = elem["name"]
-        phones = elem["phone"].split(';')
-        working = working_hours(elem["hoursOfOperation"])
+    for office in offices_list:
+        address = office["address"]
+        latlon = [office["latitude"], office["longitude"]]
+        name = office["name"]
+        phones = office["phone"].split(';')
+        working = working_hours(office["hoursOfOperation"])
 
         result.append({
             "address": address,
-            "latlon" : latlon,
-            "name" : name,
-            "phones" : None if not phones else phones,
+            "latlon": latlon,
+            "name": name,
+            "phones": None if not phones else phones,
             "working_hours": working
-            # "working_hours" : f"пн-пт {working_hours_list['startStr_wd']}-{working_hours_list['endStr_wd']}, "
-            #                   f"сб {working_hours_list['startStr_sun']}-{working_hours_list['endStr_sun']}, "
-            #                   f"вс {working_hours_list['startStr_sat']}-{working_hours_list['endStr_sat']}"
-            })
-    for i in result:
-        print(i)
+        })
 
     with open('tui_offices.json', 'w') as output_file:
         json.dump(result, output_file, indent=4, ensure_ascii=False)
 
 
 if __name__ == "__main__":
-    get_file()
+    main()
