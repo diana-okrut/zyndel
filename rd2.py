@@ -3,26 +3,8 @@ import json
 import requests
 
 
-def working_hours(elem):
-    '''
-     ["пн - пт 10:00 до 20:00", "сб-вс 10:00-20:00"]
-     elem = {
-            "workdays": {
-                "startStr": "11:00",
-                "endStr": "21:00",
-                "isDayOff": false
-            },
-            "saturday": {
-                "startStr": "11:00",
-                "endStr": "18:00",
-                "isDayOff": false
-            },
-            "sunday": {
-                "isDayOff": true
-            }
-        }
-    '''
-    workdays, saturday, sunday = elem['workdays'], elem['saturday'], elem['sunday']
+def working_hours(work_week):
+    workdays, saturday, sunday = work_week['workdays'], work_week['saturday'], work_week['sunday']
     time_in_workdays = f"пн-пт {workdays['startStr']} до {workdays['endStr']}"
     time_in_sunday = None
     if sunday == saturday and len(sunday) > 1:
