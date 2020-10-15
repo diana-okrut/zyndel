@@ -39,7 +39,7 @@ def parse_shops():
             })
 
     with open('mebelshara_shops.json', 'w') as file:
-        json.dump(mebelshara_shops, file, indent=4)
+        json.dump(mebelshara_shops, file, indent=4, ensure_ascii=False)
 
 
 if __name__ == "__main__":
