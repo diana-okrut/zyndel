@@ -24,14 +24,18 @@ def working_hours(work_week):
 def main():
     response = requests.get(
         'https://apigate.tui.ru/api/office/list?cityId=1&subwayId=&hoursFrom=&hoursTo=&serviceIds=all&toBeOpenOnHolidays=false')
+    text = response.json()
     info_about_offices = json.loads(response.text)
-    offices_list = info_about_offices.get('offices')
+    offices_list = info_about_offices.get('offices', [])
     result = []
     for office in offices_list:
         address = office["address"]
         latlon = [office["latitude"], office["longitude"]]
         name = office["name"]
         phones = office["phone"].split(';')
+        for phone in phones:
+            phone.replace('+7', '8')
+
         working = working_hours(office["hoursOfOperation"])
 
         result.append({
